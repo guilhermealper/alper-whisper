@@ -15,11 +15,40 @@
       </header>
 
       <section class="mic-section">
-        <button id="mic-button" class="mic-button" type="button" aria-label="Gravar">
-          <i data-lucide="mic" class="icon-mic"></i>
-          <i data-lucide="square" class="icon-stop"></i>
-        </button>
-        <p id="status" class="status">Pronto para gravar</p>
+        <div id="install-view" class="install-view hidden">
+          <button id="install-button" class="install-button" type="button">
+            <i data-lucide="download" class="icon-download"></i>
+            <span>Iniciar configuração</span>
+          </button>
+          <p class="install-info">
+            Baixa o modelo Whisper (~800 MB) uma vez só. Depois roda offline,
+            sem API e sem custo.
+          </p>
+        </div>
+
+        <div id="mic-view" class="mic-view hidden">
+          <div class="controls">
+            <label class="control">
+              <span class="control-label">Idioma</span>
+              <select id="language" class="select">
+                <option value="">Auto</option>
+                <option value="pt" selected>Português</option>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="it">Italiano</option>
+                <option value="ja">日本語</option>
+              </select>
+            </label>
+          </div>
+          <button id="mic-button" class="mic-button" type="button" aria-label="Gravar">
+            <i data-lucide="mic" class="icon-mic"></i>
+            <i data-lucide="square" class="icon-stop"></i>
+          </button>
+          <p id="status" class="status">Pronto para gravar</p>
+        </div>
+
         <div id="loading" class="loading hidden">
           <div class="loading-bar"><div id="loading-fill" class="loading-fill"></div></div>
           <span id="loading-label" class="loading-label">Carregando modelo…</span>

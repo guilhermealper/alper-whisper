@@ -63,6 +63,114 @@ body {
   align-items: center;
   gap: 16px;
   padding: 24px 0 8px;
+  min-height: 220px;
+  justify-content: center;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.install-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.mic-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.install-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(255, 90, 95, 0.35);
+  transition: transform 0.12s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.install-button:hover {
+  background: var(--accent-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(255, 90, 95, 0.45);
+}
+
+.install-button:active {
+  transform: translateY(0);
+}
+
+.install-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.install-button .icon-download svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+
+.install-info {
+  margin: 0;
+  max-width: 360px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--bg-elev);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 28px 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a929d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.select:hover {
+  border-color: #2c333d;
+  background-color: var(--bg-elev-2);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .mic-button {

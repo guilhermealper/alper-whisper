@@ -3,9 +3,16 @@ import { createIcons, Mic, Square, Copy, Check } from 'lucide';
 
 env.allowLocalModels = false;
 
-const MODEL_ID = 'Xenova/whisper-base';
+const MODEL_WEBGPU = 'onnx-community/whisper-large-v3-turbo';
+const MODEL_WASM = 'Xenova/whisper-base';
 
+const INSTALLED_KEY = 'webwhisper:installed';
+
+const installView = document.getElementById('install-view');
+const installBtn = document.getElementById('install-button');
+const micView = document.getElementById('mic-view');
 const micBtn = document.getElementById('mic-button');
+const langEl = document.getElementById('language');
 const statusEl = document.getElementById('status');
 const loadingEl = document.getElementById('loading');
 const loadingFill = document.getElementById('loading-fill');
@@ -72,15 +79,19 @@ async function ensureTranscriber() {
   modelLoadingPromise = (async () => {
     try {
       if (supportsWebGPU) {
-        return await pipeline('automatic-speech-recognition', MODEL_ID, {
+        return await pipeline('automatic-speech-recognition', MODEL_WEBGPU, {
           device: 'webgpu',
+          dtype: {
+            encoder_model: 'fp16',
+            decoder_model_merged: 'q4',
+          },
           progress_callback: updateLoadingProgress,
         });
       }
     } catch (err) {
       console.warn('WebGPU falhou, caindo para WASM:', err);
     }
-    return await pipeline('automatic-speech-recognition', MODEL_ID, {
+    return await pipeline('automatic-speech-recognition', MODEL_WASM, {
       device: 'wasm',
       progress_callback: updateLoadingProgress,
     });
@@ -112,22 +123,25 @@ function pickMimeType() {
 
 async function startRecording() {
   micBtn.disabled = true;
-  setStatus('Carregando modelo…');
-  try {
-    await ensureTranscriber();
-  } catch (err) {
-    console.error(err);
-    setStatus('Falha ao carregar modelo. Recarregue a página.');
-    micBtn.disabled = false;
-    return;
+  if (!transcriber) {
+    setStatus('Carregando modelo…');
+    try {
+      await ensureTranscriber();
+    } catch (err) {
+      console.error(err);
+      setStatus('Falha ao carregar modelo. Recarregue a página.');
+      micBtn.disabled = false;
+      return;
+    }
   }
 
   try {
     activeStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         channelCount: 1,
-        echoCancellation: true,
-        noiseSuppression: true,
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
       },
     });
   } catch (err) {
@@ -177,11 +191,15 @@ async function handleRecorderStop() {
       return;
     }
     const audio = await blobToMonoFloat32At16k(blob);
+    const language = langEl.value || null;
     const result = await transcriber(audio, {
       task: 'transcribe',
+      language,
       return_timestamps: false,
       chunk_length_s: 30,
       stride_length_s: 5,
+      no_repeat_ngram_size: 3,
+      temperature: 0,
     });
     addCard(result?.text ?? '');
     setStatus('Pronto para gravar');
@@ -281,7 +299,48 @@ micBtn.addEventListener('click', () => {
 
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && document.activeElement === document.body) {
+    if (micView.classList.contains('hidden')) return;
     e.preventDefault();
     micBtn.click();
   }
 });
+
+installBtn.addEventListener('click', async () => {
+  installBtn.disabled = true;
+  installView.classList.add('hidden');
+  showLoadingUI('Baixando Whisper (~800 MB, uma vez só)…');
+  try {
+    await ensureTranscriber();
+    localStorage.setItem(INSTALLED_KEY, 'true');
+    micView.classList.remove('hidden');
+    setStatus('Pronto para gravar');
+  } catch (err) {
+    console.error(err);
+    installView.classList.remove('hidden');
+    installBtn.disabled = false;
+  } finally {
+    hideLoadingUI();
+  }
+});
+
+async function init() {
+  const installed = localStorage.getItem(INSTALLED_KEY) === 'true';
+  if (!installed) {
+    installView.classList.remove('hidden');
+    return;
+  }
+  micView.classList.remove('hidden');
+  setStatus('Carregando modelo…');
+  try {
+    await ensureTranscriber();
+    setStatus('Pronto para gravar');
+  } catch (err) {
+    console.error(err);
+    localStorage.removeItem(INSTALLED_KEY);
+    micView.classList.add('hidden');
+    installView.classList.remove('hidden');
+    setStatus('');
+  }
+}
+
+init();
