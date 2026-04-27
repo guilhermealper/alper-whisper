@@ -5,7 +5,7 @@ env.allowLocalModels = false;
 
 const MODEL_WEBGPU = 'onnx-community/whisper-large-v3-turbo';
 const MODEL_WASM = 'Xenova/whisper-base';
-const INSTALL_VERSION = 'v3-large-v3-turbo-fp32-q4';
+const INSTALL_VERSION = 'v4-large-v3-turbo-fp16-q4';
 
 const INSTALLED_KEY = `webwhisper:installed:${INSTALL_VERSION}`;
 
@@ -85,7 +85,7 @@ async function ensureTranscriber() {
         return await pipeline('automatic-speech-recognition', MODEL_WEBGPU, {
           device: 'webgpu',
           dtype: {
-            encoder_model: 'fp32',
+            encoder_model: 'fp16',
             decoder_model_merged: 'q4',
           },
           progress_callback: updateLoadingProgress,
@@ -354,7 +354,7 @@ window.addEventListener('keydown', (e) => {
 installBtn.addEventListener('click', async () => {
   installBtn.disabled = true;
   installView.classList.add('hidden');
-  showLoadingUI('Baixando Whisper Large v3 Turbo (~900 MB, uma vez só)…');
+  showLoadingUI('Baixando Whisper Large v3 Turbo (~550 MB, uma vez só)…');
   try {
     await ensureTranscriber();
     localStorage.setItem(INSTALLED_KEY, 'true');
@@ -370,7 +370,7 @@ installBtn.addEventListener('click', async () => {
 });
 
 reinstallBtn.addEventListener('click', () => {
-  if (!confirm('Reinstalar o modelo? Vai re-baixar ~900 MB.')) return;
+  if (!confirm('Reinstalar o modelo? Vai re-baixar ~550 MB.')) return;
   Object.keys(localStorage)
     .filter((k) => k.startsWith('webwhisper:installed'))
     .forEach((k) => localStorage.removeItem(k));
