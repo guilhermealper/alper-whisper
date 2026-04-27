@@ -5,13 +5,15 @@ env.allowLocalModels = false;
 
 const MODEL_WEBGPU = 'onnx-community/whisper-large-v3-turbo';
 const MODEL_WASM = 'Xenova/whisper-base';
+const INSTALL_VERSION = 'v2-large-v3-turbo-fp32';
 
-const INSTALLED_KEY = 'webwhisper:installed';
+const INSTALLED_KEY = `webwhisper:installed:${INSTALL_VERSION}`;
 
 const installView = document.getElementById('install-view');
 const installBtn = document.getElementById('install-button');
 const micView = document.getElementById('mic-view');
 const micBtn = document.getElementById('mic-button');
+const reinstallBtn = document.getElementById('reinstall-link');
 const langEl = document.getElementById('language');
 const statusEl = document.getElementById('status');
 const loadingEl = document.getElementById('loading');
@@ -26,6 +28,7 @@ let recorder = null;
 let recordedChunks = [];
 let activeStream = null;
 let recorderMime = '';
+let countdownAbort = null;
 
 renderIcons();
 
@@ -82,8 +85,8 @@ async function ensureTranscriber() {
         return await pipeline('automatic-speech-recognition', MODEL_WEBGPU, {
           device: 'webgpu',
           dtype: {
-            encoder_model: 'fp16',
-            decoder_model_merged: 'q4',
+            encoder_model: 'fp32',
+            decoder_model_merged: 'fp32',
           },
           progress_callback: updateLoadingProgress,
         });
@@ -121,6 +124,26 @@ function pickMimeType() {
   return '';
 }
 
+function sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new DOMException('aborted', 'AbortError'));
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(t);
+      reject(new DOMException('aborted', 'AbortError'));
+    });
+  });
+}
+
+function cleanupStream() {
+  if (activeStream) {
+    activeStream.getTracks().forEach((t) => t.stop());
+    activeStream = null;
+  }
+  recorder = null;
+  recordedChunks = [];
+}
+
 async function startRecording() {
   micBtn.disabled = true;
   if (!transcriber) {
@@ -156,19 +179,43 @@ async function startRecording() {
     ? new MediaRecorder(activeStream, { mimeType: recorderMime })
     : new MediaRecorder(activeStream);
   recordedChunks = [];
-
   recorder.addEventListener('dataavailable', (e) => {
     if (e.data && e.data.size > 0) recordedChunks.push(e.data);
   });
   recorder.addEventListener('stop', handleRecorderStop);
-  recorder.start();
 
   micBtn.classList.add('recording');
   micBtn.disabled = false;
-  setStatus('Gravando… clique para parar');
+
+  countdownAbort = new AbortController();
+  try {
+    for (let i = 3; i > 1; i--) {
+      setStatus(`Fale em ${i}…`);
+      await sleep(900, countdownAbort.signal);
+    }
+    setStatus('Fale em 1…');
+    if (recorder) recorder.start();
+    await sleep(900, countdownAbort.signal);
+    setStatus('Gravando… clique para parar');
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      cleanupStream();
+      micBtn.classList.remove('recording');
+      micBtn.disabled = false;
+      setStatus('Cancelado');
+      return;
+    }
+    throw err;
+  } finally {
+    countdownAbort = null;
+  }
 }
 
 function stopRecording() {
+  if (countdownAbort) {
+    countdownAbort.abort();
+    return;
+  }
   if (!recorder || recorder.state === 'inactive') return;
   recorder.stop();
   if (activeStream) {
@@ -191,16 +238,15 @@ async function handleRecorderStop() {
       return;
     }
     const audio = await blobToMonoFloat32At16k(blob);
-    const language = langEl.value || null;
-    const result = await transcriber(audio, {
+    const opts = {
       task: 'transcribe',
-      language,
       return_timestamps: false,
       chunk_length_s: 30,
       stride_length_s: 5,
-      no_repeat_ngram_size: 3,
-      temperature: 0,
-    });
+    };
+    const lang = langEl.value;
+    if (lang) opts.language = lang;
+    const result = await transcriber(audio, opts);
     addCard(result?.text ?? '');
     setStatus('Pronto para gravar');
   } catch (err) {
@@ -308,7 +354,7 @@ window.addEventListener('keydown', (e) => {
 installBtn.addEventListener('click', async () => {
   installBtn.disabled = true;
   installView.classList.add('hidden');
-  showLoadingUI('Baixando Whisper (~800 MB, uma vez só)…');
+  showLoadingUI('Baixando Whisper Large v3 Turbo (~1.5 GB, uma vez só)…');
   try {
     await ensureTranscriber();
     localStorage.setItem(INSTALLED_KEY, 'true');
@@ -321,6 +367,14 @@ installBtn.addEventListener('click', async () => {
   } finally {
     hideLoadingUI();
   }
+});
+
+reinstallBtn.addEventListener('click', () => {
+  if (!confirm('Reinstalar o modelo? Vai re-baixar ~1.5 GB.')) return;
+  Object.keys(localStorage)
+    .filter((k) => k.startsWith('webwhisper:installed'))
+    .forEach((k) => localStorage.removeItem(k));
+  location.reload();
 });
 
 async function init() {
