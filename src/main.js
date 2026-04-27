@@ -1,11 +1,11 @@
 import { pipeline, env } from '@huggingface/transformers';
-import { createIcons, Mic, Square, Copy, Check } from 'lucide';
+import { createIcons, Mic, Square, Copy, Check, Download } from 'lucide';
 
 env.allowLocalModels = false;
 
 const MODEL_WEBGPU = 'onnx-community/whisper-large-v3-turbo';
 const MODEL_WASM = 'Xenova/whisper-base';
-const INSTALL_VERSION = 'v2-large-v3-turbo-fp32';
+const INSTALL_VERSION = 'v3-large-v3-turbo-fp32-q4';
 
 const INSTALLED_KEY = `webwhisper:installed:${INSTALL_VERSION}`;
 
@@ -38,7 +38,7 @@ const setStatus = (text) => {
 
 function renderIcons(root) {
   createIcons({
-    icons: { Mic, Square, Copy, Check },
+    icons: { Mic, Square, Copy, Check, Download },
     attrs: { 'stroke-linecap': 'round', 'stroke-linejoin': 'round' },
     ...(root ? { root } : {}),
   });
@@ -86,7 +86,7 @@ async function ensureTranscriber() {
           device: 'webgpu',
           dtype: {
             encoder_model: 'fp32',
-            decoder_model_merged: 'fp32',
+            decoder_model_merged: 'q4',
           },
           progress_callback: updateLoadingProgress,
         });
@@ -354,7 +354,7 @@ window.addEventListener('keydown', (e) => {
 installBtn.addEventListener('click', async () => {
   installBtn.disabled = true;
   installView.classList.add('hidden');
-  showLoadingUI('Baixando Whisper Large v3 Turbo (~1.5 GB, uma vez só)…');
+  showLoadingUI('Baixando Whisper Large v3 Turbo (~900 MB, uma vez só)…');
   try {
     await ensureTranscriber();
     localStorage.setItem(INSTALLED_KEY, 'true');
@@ -370,7 +370,7 @@ installBtn.addEventListener('click', async () => {
 });
 
 reinstallBtn.addEventListener('click', () => {
-  if (!confirm('Reinstalar o modelo? Vai re-baixar ~1.5 GB.')) return;
+  if (!confirm('Reinstalar o modelo? Vai re-baixar ~900 MB.')) return;
   Object.keys(localStorage)
     .filter((k) => k.startsWith('webwhisper:installed'))
     .forEach((k) => localStorage.removeItem(k));
