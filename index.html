@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0d10" />
+    <title>WebWhisper</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="hero">
+        <h1>WebWhisper</h1>
+        <p class="subtitle">Transcrição local no seu navegador.</p>
+      </header>
+
+      <section class="mic-section">
+        <button id="mic-button" class="mic-button" type="button" aria-label="Gravar">
+          <i data-lucide="mic" class="icon-mic"></i>
+          <i data-lucide="square" class="icon-stop"></i>
+        </button>
+        <p id="status" class="status">Pronto para gravar</p>
+        <div id="loading" class="loading hidden">
+          <div class="loading-bar"><div id="loading-fill" class="loading-fill"></div></div>
+          <span id="loading-label" class="loading-label">Carregando modelo…</span>
+        </div>
+      </section>
+
+      <section id="results" class="results"></section>
+    </main>
+
+    <template id="card-template">
+      <article class="card">
+        <header class="card-head">
+          <time class="card-time"></time>
+          <button class="copy-btn" type="button" aria-label="Copiar">
+            <i data-lucide="copy" class="icon-copy"></i>
+            <i data-lucide="check" class="icon-check"></i>
+          </button>
+        </header>
+        <p class="card-text"></p>
+      </article>
+    </template>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
